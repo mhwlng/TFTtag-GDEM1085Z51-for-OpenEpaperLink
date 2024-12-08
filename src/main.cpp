@@ -1,10 +1,9 @@
-#include <FS.h>
-
-#include <Wire.h>
 #include <Arduino.h>
-
-#include <SPI.h>
 #include <WiFi.h>
+
+#include "AsyncUDP_W5500.h"
+
+#include <AsyncUDP_ESP32_SC_W5500.h>
 
 #include "commstructs.h"
 #include "main.h"
@@ -12,17 +11,12 @@
 
 #include "Display_EPD_W21_spi.h"
 #include "Display_EPD_W21.h"
-#include "Ap_29demo.h"  
-
-
-const char *ssid = "xxx";
-const char *password = "yyy";
 
 void advertiseTagTask(void *parameter) {
 	sendAvail(0xFC);
 	while (true) {
 		vTaskDelay(60000 / portTICK_PERIOD_MS);
-		sendAvail(0);
+	  sendAvail(0);
 	}
 }
 
@@ -34,9 +28,64 @@ void drawImage(uint8_t *buffer, uint8_t dataType) {
 
 }
 
+void Ethernet_event(WiFiEvent_t event)
+{
+  switch (event)
+  {
+    case ARDUINO_EVENT_ETH_START:
+      ET_LOG(F("\nETH Started"));
+
+      uint8_t  address[6];
+      WiFi.macAddress(address);
+    	char hexmac1[20];
+    	sprintf(hexmac1, "GDEM108Z51-%02X%02X%02X", address[3],address[4], address[5]);
+      ETH.setHostname(hexmac1);
+      break;
+
+    case ARDUINO_EVENT_ETH_CONNECTED:
+      ET_LOG(F("ETH Connected"));
+      break;
+
+    case ARDUINO_EVENT_ETH_GOT_IP:
+      if (!ESP32_W5500_eth_connected)
+      {
+        ET_LOG3(F("ETH MAC: "), ETH.macAddress(), F(", IPv4: "), ETH.localIP());
+
+        if (ETH.fullDuplex())
+        {
+          ET_LOG0(F("FULL_DUPLEX, "));
+        }
+        else
+        {
+          ET_LOG0(F("HALF_DUPLEX, "));
+        }
+
+        ET_LOG1(ETH.linkSpeed(), F("Mbps"));
+
+        ESP32_W5500_eth_connected = true;
+      }
+
+      break;
+
+    case ARDUINO_EVENT_ETH_DISCONNECTED:
+      ET_LOG("ETH Disconnected");
+      ESP32_W5500_eth_connected = false;
+      break;
+
+    case ARDUINO_EVENT_ETH_STOP:
+      ET_LOG("\ETH Stopped");
+      ESP32_W5500_eth_connected = false;
+      break;
+
+    default:
+      break;
+  }
+}
+
+
 void setup() {
 	Serial.begin(115200);
-
+  
   /*
   SPIRAM pins:
 33 SPICLK
@@ -83,7 +132,7 @@ IO34 SPIRAM
 IO33 SPIRAM
 
   */
- 
+
   pinMode(EPD_W21_BUSY, INPUT);  //BUSY
   pinMode(EPD_W21_RST, OUTPUT); //RES    
   pinMode(EPD_W21_CS2, OUTPUT); //CS2     
@@ -92,22 +141,31 @@ IO33 SPIRAM
   pinMode(EPD_W21_CLK, OUTPUT); //SCLK      
   pinMode(EPD_W21_MOSI, OUTPUT); //SDI         
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  while (!Serial && (millis() < 5000));
 
-  IPAddress IP = WiFi.localIP();
+  delay(500);
 
+  Serial.setDebugOutput(true);
+
+  uint8_t  address[6];
+	WiFi.macAddress(address);
+
+  WiFi.onEvent(Ethernet_event);
+
+  ETH.begin( MISO_GPIO, MOSI_GPIO, SCK_GPIO, CS_GPIO, INT_GPIO, SPI_CLOCK_MHZ, ETH_SPI_HOST, address );
+
+  ESP32_W5500_waitForConnect();
 
 	vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-	init_udp();
+	init_udp(ETH.localIP());
 
 	xTaskCreate(advertiseTagTask, "Tag alive", 6000, NULL, 2, NULL);
 }
 
 void loop() {
 	vTaskDelay(10000 / portTICK_PERIOD_MS);
-/*
+  /*
     delay(5000);
     Serial.println("\n\n##################################");
     Serial.printf("Internal Total heap %d, internal Free Heap %d\n", ESP.getHeapSize(), ESP.getFreeHeap());

@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#include "AsyncUDP.h"
+#include "AsyncUDP_W5500.h"
 
 #ifndef defudpcomm
 #define defudpcomm
@@ -9,7 +9,7 @@ class UDPcomm {
 	public:
 		UDPcomm();
 		~UDPcomm();
-		void init();
+		void init(IPAddress localIP);
 		void getAPList();
 		void netProcessDataReq(struct espAvailDataReq* eadr);
 		void netProcessXferComplete(struct espXferComplete* xfc);
@@ -18,12 +18,13 @@ class UDPcomm {
 		void netTaginfo(struct TagInfo* taginfoitem);
     private:
 		AsyncUDP udp;
+		IPAddress localIP;
 		void processPacket(AsyncUDPPacket packet);
 };
 
 #endif
 
-void init_udp();
+void init_udp(IPAddress localIP);
 void sendAvail(uint8_t wakeupReason);
 void prepareExternalDataAvail(struct pendingData *pending, IPAddress remoteIP);
 void mac2hex(uint8_t *mac, char *hexBuffer);

@@ -23,6 +23,8 @@ Connections adapter board to ESP32:
 | GND         |  GND         |
 | 3.3V        |  3.3V        |
 
+Connects to the network via W5500 ethernet connection, not via WIFI
+
 Based on https://github.com/nlimper/TFTtag-for-OpenEpaperLink
 
 Also see https://github.com/OpenEPaperLink/OpenEPaperLink
