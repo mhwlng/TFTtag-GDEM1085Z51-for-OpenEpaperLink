@@ -23,8 +23,8 @@ void sendAvail(uint8_t wakeupReason) {
 	uint8_t mac[6];
 	WiFi.macAddress(mac);
 	memcpy(&eadr.src, mac, 6);
-	eadr.adr.lastPacketRSSI = 0; // WiFi.RSSI();
-	eadr.adr.currentChannel = 0; // WiFi.channel();
+	eadr.adr.lastPacketRSSI = -100; // WiFi.RSSI();
+	eadr.adr.currentChannel = 1; // WiFi.channel();
 	eadr.adr.hwType = 0xE3;
 	eadr.adr.wakeupReason = wakeupReason;
 	eadr.adr.capabilities = 0;
