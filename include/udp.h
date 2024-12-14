@@ -28,3 +28,4 @@ void init_udp(IPAddress localIP);
 void sendAvail(uint8_t wakeupReason);
 void prepareExternalDataAvail(struct pendingData *pending, IPAddress remoteIP);
 void mac2hex(uint8_t *mac, char *hexBuffer);
+void updateTaginfoitem(struct TagInfo *taginfoitem, IPAddress remoteIP);

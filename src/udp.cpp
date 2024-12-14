@@ -10,6 +10,11 @@
 #define UDPIP IPAddress(239, 10, 0, 1)
 #define UDPPORT 16033
 
+#define DATATYPE_IMG_RAW_1BPP 0x20
+#define DATATYPE_IMG_RAW_2BPP 0x21
+#define DATATYPE_IMG_RAW_3BPP 0x22
+#define DATATYPE_IMG_RAW_4BPP 0x23
+
 #define MULTICAST // if not defined: broadcast
 
 UDPcomm udpsync;
@@ -95,7 +100,6 @@ void UDPcomm::processPacket(AsyncUDPPacket packet) {
             break;
         }
         case PKT_AVAIL_DATA_REQ: {
-
             pendingData pending;
             memset(&pending, 0, sizeof(pendingData));
             memcpy(&pending, &packet.data()[1], std::min(packet.length() - 1, sizeof(pendingData)));
@@ -108,7 +112,7 @@ void UDPcomm::processPacket(AsyncUDPPacket packet) {
                 // wsErr("Got a packet from " + packet.remoteIP().toString() + " with mismatched udp sync version. Update firmware!");
             } else {
                 TagInfo* taginfoitem = (TagInfo*)&packet.data()[1];
-                // updateTaginfoitem(taginfoitem);
+			    updateTaginfoitem(taginfoitem, packet.remoteIP());
             }
         }
     }
@@ -190,8 +194,10 @@ void prepareExternalDataAvail(struct pendingData *pending, IPAddress remoteIP) {
 
 
     switch (pending->availdatainfo.dataType) {
-      case 0x20:
-      case 0x21: {
+		case DATATYPE_IMG_RAW_1BPP:
+		case DATATYPE_IMG_RAW_2BPP:
+		case DATATYPE_IMG_RAW_3BPP:
+		case DATATYPE_IMG_RAW_4BPP: {
         char md5[17];
         mac2hex(reinterpret_cast<uint8_t*>(&pending->availdatainfo.dataVer), md5);
         char imageUrl[80];
@@ -200,6 +206,7 @@ void prepareExternalDataAvail(struct pendingData *pending, IPAddress remoteIP) {
 
         HTTPClient http;
         http.begin(imageUrl);
+	    http.setTimeout(5000);
         int httpCode = http.GET();
 
         if (httpCode == 200) {
@@ -207,10 +214,18 @@ void prepareExternalDataAvail(struct pendingData *pending, IPAddress remoteIP) {
           int downloadRemaining = http.getSize();
           Serial.printf("Download Remaining %d\n", downloadRemaining);
 
-          const size_t bufferSize = 163200;
+    	  uint16_t screenWidth = 1360;
+		  uint16_t screenHeight = 480;
+		  size_t bufferSize = screenWidth * screenHeight / 8 * 2;
+		  if (pending->availdatainfo.dataType == DATATYPE_IMG_RAW_3BPP) {
+			bufferSize = screenWidth * screenHeight / 8 * 3;
+		  }
+		  if (pending->availdatainfo.dataType == DATATYPE_IMG_RAW_4BPP) {
+			bufferSize = screenWidth * screenHeight / 8 * 4;
+		  }
+          Serial.printf("Buffer Size %d\n", bufferSize);
           uint8_t *buffer = (uint8_t *)malloc(bufferSize);
 
-          Serial.printf("Buffer Size %d\n", bufferSize);
 
           if (buffer) {
             #define CHUNK_SIZE HTTP_TCP_BUFFER_SIZE/2
@@ -248,9 +263,10 @@ void prepareExternalDataAvail(struct pendingData *pending, IPAddress remoteIP) {
             udpsync.netProcessXferComplete(&xfc);
 
             drawImage(buffer, pending->availdatainfo.dataType);
-
-          }
-          free(buffer);
+            free(buffer);
+		  } else {
+			Serial.println("buffer cannot be allocated");
+		  }
         }
         else{
           Serial.printf("httpCode %d\n", httpCode);
@@ -276,3 +292,8 @@ void mac2hex(uint8_t *mac, char *hexBuffer) {
 			mac[7], mac[6], mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
 }
 
+void updateTaginfoitem(struct TagInfo *taginfoitem, IPAddress remoteIP) {
+	char hexmac[17];
+	mac2hex(taginfoitem->mac, hexmac);
+    Serial.println("ping tag " + String(hexmac));
+}
