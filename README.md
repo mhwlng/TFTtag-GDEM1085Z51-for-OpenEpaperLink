@@ -28,3 +28,5 @@ Connects to the network via W5500 ethernet connection, not via WIFI
 Based on https://github.com/nlimper/TFTtag-for-OpenEpaperLink
 
 Also see https://github.com/OpenEPaperLink/OpenEPaperLink
+
+![TFTtag-GDEM1085Z51-for-OpenEpaperLink](https://i.imgur.com/DhmEM12.jpeg)
