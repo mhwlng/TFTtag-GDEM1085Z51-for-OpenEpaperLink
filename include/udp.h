@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#include "AsyncUDP_W5500.h"
+#include "AsyncUDP.h"
 
 #ifndef defudpcomm
 #define defudpcomm

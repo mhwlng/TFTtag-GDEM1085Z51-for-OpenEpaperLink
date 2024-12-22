@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 
-#include "AsyncUDP_W5500.h"
+#include "AsyncUDP.h"
 
-#include <AsyncUDP_ESP32_SC_W5500.h>
+#include <AsyncWebServer_ESP32_SC_W5500.h>
 
 #include "commstructs.h"
 #include "main.h"
@@ -11,6 +11,13 @@
 
 #include "Display_EPD_W21_spi.h"
 #include "Display_EPD_W21.h"
+
+#define MISO_GPIO                    12//GPIO12
+#define MOSI_GPIO                    11//GPIO11
+#define SCK_GPIO                     13//GPIO13
+#define CS_GPIO                      14//GPIO14
+#define INT_GPIO                     10//GPIO10
+//#define ETH_RST_PIN                 9//GPIO9
 
 void advertiseTagTask(void *parameter) {
 	sendAvail(0xFC);
@@ -33,34 +40,34 @@ void Ethernet_event(WiFiEvent_t event)
   switch (event)
   {
     case ARDUINO_EVENT_ETH_START:
-      ET_LOG(F("\nETH Started"));
+      AWS_LOG(F("\nETH Started"));
 
       uint8_t  address[6];
       WiFi.macAddress(address);
-    	char hexmac1[20];
+    	char hexmac1[40];
     	sprintf(hexmac1, "GDEM108Z51-%02X%02X%02X", address[3],address[4], address[5]);
       ETH.setHostname(hexmac1);
       break;
 
     case ARDUINO_EVENT_ETH_CONNECTED:
-      ET_LOG(F("ETH Connected"));
+      AWS_LOG(F("ETH Connected"));
       break;
 
     case ARDUINO_EVENT_ETH_GOT_IP:
       if (!ESP32_W5500_eth_connected)
       {
-        ET_LOG3(F("ETH MAC: "), ETH.macAddress(), F(", IPv4: "), ETH.localIP());
+        AWS_LOG3(F("ETH MAC: "), ETH.macAddress(), F(", IPv4: "), ETH.localIP());
 
         if (ETH.fullDuplex())
         {
-          ET_LOG0(F("FULL_DUPLEX, "));
+          AWS_LOG0(F("FULL_DUPLEX, "));
         }
         else
         {
-          ET_LOG0(F("HALF_DUPLEX, "));
+          AWS_LOG0(F("HALF_DUPLEX, "));
         }
 
-        ET_LOG1(ETH.linkSpeed(), F("Mbps"));
+        AWS_LOG1(ETH.linkSpeed(), F("Mbps"));
 
         ESP32_W5500_eth_connected = true;
       }
@@ -68,12 +75,12 @@ void Ethernet_event(WiFiEvent_t event)
       break;
 
     case ARDUINO_EVENT_ETH_DISCONNECTED:
-      ET_LOG("ETH Disconnected");
+      AWS_LOG("ETH Disconnected");
       ESP32_W5500_eth_connected = false;
       break;
 
     case ARDUINO_EVENT_ETH_STOP:
-      ET_LOG("\ETH Stopped");
+      AWS_LOG("ETH Stopped");
       ESP32_W5500_eth_connected = false;
       break;
 
