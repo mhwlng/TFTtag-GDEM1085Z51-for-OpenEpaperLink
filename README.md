@@ -29,4 +29,9 @@ Based on https://github.com/nlimper/TFTtag-for-OpenEpaperLink
 
 Also see https://github.com/OpenEPaperLink/OpenEPaperLink
 
+3d printed stand https://www.printables.com/model/1120620-stand-for-gdem1085z51-1360x480-1085inch-blackwhite
+
 ![TFTtag-GDEM1085Z51-for-OpenEpaperLink](https://i.imgur.com/DhmEM12.jpeg)
+
+![TFTtag-GDEM1085Z51-stand](https://i.imgur.com/QcHtwWg.jpeg)
+
